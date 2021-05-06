@@ -1,0 +1,47 @@
+<Tree>:
+    canvas:
+        Color:
+            rgba: 1, 1, 1, 1
+        Rectangle:
+            size: self.size
+            pos: self.pos
+
+    FloatLayout:
+        id: search
+        size_hint: 1, 1
+        pos_hint: {'x': 0, 'y': 0}
+
+        TextInput:
+            id: search_input
+            hint_text: 'Type Schema Name To Search'
+            size_hint: 0.2, 0.05
+            pos_hint: {'center_x': 0.5, 'center_y': 0.85}
+            padding_x: 10
+            padding_y: (self.height - self.font_size) / 2.5
+            halign: 'center'
+            on_text: root.on_text_search_input(self)
+
+        ScrollView:
+            size_hint: 0.2, 0.6
+            pos_hint: {'center_x': 0.5, 'y': 0.2}
+            do_scroll_x: False
+            do_scroll_y: True
+            GridLayout:
+                id: search_result
+                size_hint: 1, None
+                height: self.minimum_height
+                cols: 1
+
+
+    ScrollView:
+        id: tree
+        pos_hint: {'x': 1, 'top': 1}
+        do_scroll_x: True
+        do_scroll_y: True
+        GridLayout:
+            id: tree_layout
+            size_hint: None, None
+            width: self.minimum_width
+            height: self.minimum_height
+            cols: 1
+            spacing: 30
