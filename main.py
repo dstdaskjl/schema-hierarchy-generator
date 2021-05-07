@@ -10,6 +10,9 @@
 from kivy.config import Config
 Config.set('kivy', 'keyboard_mode', 'systemanddock')
 Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
+Config.set('graphics', 'width', '1920')
+Config.set('graphics', 'height', '1080')
+Config.set('graphics', 'fullscreen', 'False')
 
 from tree import Tree
 from kivy.uix.screenmanager import ScreenManager, NoTransition
@@ -24,7 +27,7 @@ from kivy.logger import Logger
 
 class Application(App):
     def build(self):
-        Window.bind(mouse_pos=lambda w, p: print(p))
+        # Window.bind(mouse_pos=lambda w, p: print(p))
         return screen_manager
 
 def main():

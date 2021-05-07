@@ -1,3 +1,6 @@
+import copy
+
+
 class DFS:
     stack = 0
 
@@ -65,6 +68,12 @@ class Schema:
         self.depth = 0
         self.height = 0
 
+    def copy(self):
+        copy_schema = Schema(self.name)
+        copy_schema.types = copy.deepcopy(self.types)
+        copy_schema.descriptions = copy.deepcopy(self.descriptions)
+        return copy_schema
+
     def find_depth(self):
         self.depth = DFS().get_depth(node=self, depth=0)
 
@@ -89,61 +98,49 @@ class Schema:
 class Struct:
     def __init__(self, lines):
         self.lines = lines
-        self.schemas = list()
-        self.roots = list()
+        self.schemas = self._get_schemas()
+        self._set_relationships()
 
-    def get(self):
-        self._set_schema()
-        [schema.move_types() for schema in self.schemas]
-        self._make_family()
-        self._find_depth()
-        self._find_height()
-        return self
+    def get_family_by_schema(self, schema):
+        members = list()
+        members.append(schema)
+        self._get_children_by_schema(schema, members)
+        self._get_parents_by_schema(schema, members)
+        return Family(members)
 
-    def get_max_depth(self):
-        max = 0
-        for schema in self.schemas:
-            if schema.stack > max:
-                max = schema.stack
-        return max
-
-    def search_by_name(self, name):
+    def get_schema_by_name(self, name):
         for schema in self.schemas:
             if schema.name == name:
                 return schema
 
-    def _find_depth(self):
-        for schema in self.schemas:
-            schema.find_depth()
+    def _get_children_by_schema(self, schema, family):
+        if schema.children:
+            for child in schema.children:
+                if child not in family:
+                    family.append(child)
+                    self._get_children_by_schema(schema=child, family=family)
 
-    def _find_height(self):
-        for schema in self.schemas:
-            schema.find_height()
+    def _get_parents_by_schema(self, schema, family):
+        if schema.parents:
+            for parent in schema.parents:
+                if parent not in family:
+                    family.append(parent)
+                    self._get_parents_by_schema(schema=parent, family=family)
 
-    def _make_family(self):
-        for schema in self.schemas:
-            self._set_relationship(schema)
-        for schema in self.schemas:
-            if not schema.parents:
-                self.roots.append(schema)
+    def _get_schemas(self):
+        schemas = self._get_schemas_from_lines()
+        [schema.move_types() for schema in schemas]
+        return schemas
 
-    def _set_relationship(self, schema):
-        parent_names = schema.get_parent_names()
-        for parent_name in parent_names:
-            for potential_parent in self.schemas:
-                if potential_parent.name == parent_name:
-                    schema.parents.append(potential_parent)
-                    potential_parent.children.append(schema)
-                    break
-
-    def _set_schema(self):
+    def _get_schemas_from_lines(self):
+        schemas = list()
         schema = None
         key = str()
 
         for line in self.lines:
             if line[:len('obj-schema')] == 'obj-schema':
                 schema = Schema(name=line[line.find('('):])
-                self.schemas.append(schema)
+                schemas.append(schema)
 
             elif line[:1] == ':':
                 key = line[1:]
@@ -155,4 +152,108 @@ class Struct:
                 else:
                     schema.descriptions[key].append(line)
 
+        return schemas
 
+    def _set_relationships(self):
+        for schema in self.schemas:
+            parent_names = schema.get_parent_names()
+            for parent_name in parent_names:
+                for potential_parent in self.schemas:
+                    if potential_parent.name == parent_name:
+                        schema.parents.append(potential_parent)
+                        potential_parent.children.append(schema)
+                        break
+
+
+class Family:
+    def __init__(self, members):
+        self.members = [member.copy() for member in members]
+        self._set_relationships()
+        self._find_depth()
+        self._find_height()
+        self._sort()
+
+    def get_max_depth(self):
+        max = 0
+        for member in self.members:
+            if member.depth > max:
+                max = member.depth
+        return max
+
+    def _find_depth(self):
+        for member in self.members:
+            member.find_depth()
+
+    def _find_height(self):
+        for member in self.members:
+            member.find_height()
+
+    def _set_relationships(self):
+        for member in self.members:
+            parent_names = member.get_parent_names()
+            for parent_name in parent_names:
+                for potential_parent in self.members:
+                    if potential_parent.name == parent_name:
+                        member.parents.append(potential_parent)
+                        potential_parent.children.append(member)
+                        break
+
+    def _sort(self):
+        sorted_members = self._sort_by_depth(self.members)
+        sorted_groups = self._group_by_depth(sorted_members)
+        sorted_members = [member for group in sorted_groups for member in self._sort_by_height(group)]
+        self.members = sorted_members
+
+    def _sort_by_depth(self, members):
+        sorted_members = list()
+        for member in members:
+            if not sorted_members:
+                sorted_members.append(member)
+            else:
+                for i in range(len(sorted_members)):
+                    if member.depth >= sorted_members[i].depth:
+                        sorted_members.insert(i, member)
+                        break
+                if member not in sorted_members:
+                    sorted_members.append(member)
+        return sorted_members
+
+    def _sort_by_height(self, members):
+        sorted_members = list()
+        for member in members:
+            if not sorted_members:
+                sorted_members.append(member)
+            else:
+                for i in range(len(sorted_members)):
+                    if member.height >= sorted_members[i].height:
+                        sorted_members.insert(i, member)
+                        break
+                if member not in sorted_members:
+                    sorted_members.append(member)
+        return sorted_members
+
+    # def _sort_by_parent(self):
+    #     depth_group = self._group_by_depth()
+    #     sorted_groups = list()
+    #     for h_group in depth_group:
+    #         sorted_group = list()
+    #         parent_names = [name for member in h_group for name in member.get_parent_names()]
+    #         for parent_name in parent_names:
+    #             for member in h_group:
+    #                 if member not in sorted_group and parent_name in member.get_parent_names():
+    #                     sorted_group.append(member)
+    #         sorted_groups.extend(sorted_group)
+    #     return sorted_groups
+
+
+    def _group_by_depth(self, members):
+        depth = -1
+        groups = list()
+
+        for member in members:
+            if member.depth != depth:
+                depth = member.depth
+                groups.append(list())
+            groups[-1].append(member)
+
+        return groups

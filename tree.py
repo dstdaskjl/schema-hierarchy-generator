@@ -15,28 +15,19 @@ class Tree(Screen):
     def __init__(self, **kwargs):
         super(Tree, self).__init__(**kwargs)
         lines = File('obj-schemas.txt').get()
-        self.struct = Struct(lines).get()
-        self.tree_map = dict()
+        self.struct = Struct(lines)
+        self.tree_map = dict()  # name : button_widget
+        self.timeout = 1  # Line UI creation timeout
 
     def on_release_search_item_button(self, item_button):
         schema_name = item_button.text
-        self.ids.search.pos_hint = {'x': 1, 'y': 0}
-        self.ids.search_input.text = ''
-        self.ids.search_result.clear_widgets()
-        self.ids.tree_layout.clear_widgets()
-        self.ids.tree.pos_hint = {'x': 0, 'y': 0}
+        schema = self.struct.get_schema_by_name(schema_name)
+        family = self.struct.get_family_by_schema(schema)
 
-        schema = self.struct.search_by_name(schema_name)
-        family = self._get_family_by_schema(schema)
-        family = self._sort_family_by_height(family)
-
-        self.tree_map = dict()
-        max_depth = self._get_max_depth(family)
-        self._add_gridlayouts_to_treelayout(count=max_depth + 1)
-        for member in family:
-            color = (1,0,0,1) if member.name == schema_name else (0,0,0,1)
-            self._add_button_to_tree(level=max_depth - member.depth, name=member.name, color=color)
-        Clock.schedule_once(callback=lambda *_: self._add_lines_to_tree(schema), timeout=0.5)
+        self._show_tree()
+        self._add_gridlayouts_to_tree(count=family.get_max_depth() + 1)
+        self._add_buttons_to_tree(schema, family)
+        self._add_lines_to_tree(schema)
 
     def on_text_search_input(self, text_input):
         if self._search_input_is_valid(text_input):
@@ -44,22 +35,23 @@ class Tree(Screen):
             search_result.sort()
             self._set_search_result(search_result)
 
-    def _add_gridlayouts_to_treelayout(self, count):
+    def _add_gridlayouts_to_tree(self, count):
         for _ in range(count):
-            gridlayout = GridLayout(rows=1, size_hint=(None, None), height=50, pos_hint={'x': 0, 'y': 0})
+            gridlayout = GridLayout(rows=1, size_hint=(None, None), height=40, pos_hint={'x': 0, 'y': 0})
             gridlayout.width = gridlayout.minimum_width
             gridlayout.spacing = 10
             self.ids.tree_layout.add_widget(gridlayout)
 
-    def _add_button_to_tree(self, level, name, color):
+    def _add_button_to_tree(self, level, name, center):
         layout = self.ids.tree_layout.children[level]
-        short_name = name[name.find(' ') + 1 : -1]
+        short_name = name[name.find(' ') + 1: -1]
         button = Button(
             text=short_name,
             font_name='Montserrat-Medium.ttf',
             font_size=20,
-            color=color,
+            color=(0,0,0,1),
             background_normal='',
+            background_color=(1,1,0,1) if center else (0,0,0,0),
             size_hint=(None, 1),
             width=ImageFont.truetype(font='Montserrat-Medium.ttf', size=20).getlength(text=short_name) + 20, pos_hint={'x': 0, 'y': 0},
             on_release=lambda *_: self._create_popup(name=name)
@@ -68,9 +60,18 @@ class Tree(Screen):
         layout.width = sum([widget.width for widget in layout.children]) + (layout.spacing[0] * (len(layout.children) - 1))
         self.tree_map[name] = button
 
+    def _add_buttons_to_tree(self, schema, family):
+        self.tree_map = dict()
+        for member in family.members:
+            self._add_button_to_tree(
+                level=family.get_max_depth() - member.depth,
+                name=member.name,
+                center=member.name == schema.name
+            )
+
     def _add_lines_to_tree(self, schema):
-        self._add_line_to_parents(schema)
-        self._add_line_to_children(schema)
+        Clock.schedule_once(callback=lambda *_: self._add_line_to_parents(schema), timeout=self.timeout)
+        Clock.schedule_once(callback=lambda *_: self._add_line_to_children(schema), timeout=self.timeout)
 
     def _add_line_to_parents(self, schema):
         if schema.parents:
@@ -93,7 +94,7 @@ class Tree(Screen):
                 self._add_line_to_children(schema=child)
 
     def _create_popup(self, name):
-        schema = self.struct.search_by_name(name)
+        schema = self.struct.get_schema_by_name(name)
         description = str()
         description += 'Types:\n'
         for type in schema.types:
@@ -135,34 +136,6 @@ class Tree(Screen):
         y = button.y + button.height / 2
         return x, y
 
-    def _get_family_by_schema(self, schema):
-        family = list()
-        family.append(schema)
-        self._get_parents_by_schema(schema, family)
-        self._get_children_by_schema(schema, family)
-        return family
-
-    def _get_parents_by_schema(self, schema, family):
-        if schema.parents:
-            for parent in schema.parents:
-                if parent not in family:
-                    family.append(parent)
-                    self._get_parents_by_schema(schema=parent, family=family)
-
-    def _get_children_by_schema(self, schema, family):
-        if schema.children:
-            for child in schema.children:
-                if child not in family:
-                    family.append(child)
-                    self._get_children_by_schema(schema=child, family=family)
-
-    def _get_max_depth(self, schemas):
-        max = 0
-        for schema in schemas:
-            if schema.depth > max:
-                max = schema.depth
-        return max
-
     def _get_schemas_by_keyword(self, keyword):
         search_result = list()
         for schema in self.struct.schemas:
@@ -194,6 +167,13 @@ class Tree(Screen):
                 on_release=lambda *bound_args: self.on_release_search_item_button(bound_args[0])
             )
             self.ids.search_result.add_widget(button)
+
+    def _show_tree(self):
+        self.ids.search.pos_hint = {'x': 1, 'y': 0}
+        self.ids.search_input.text = ''
+        self.ids.search_result.clear_widgets()
+        self.ids.tree_layout.clear_widgets()
+        self.ids.tree.pos_hint = {'x': 0, 'y': 0}
 
     def _sort_family_by_height(self, family):
         sorted_family = list()
