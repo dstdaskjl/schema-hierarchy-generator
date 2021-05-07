@@ -1,6 +1,7 @@
 from PIL import ImageFont
 from kivy.clock import Clock
 from kivy.graphics import Line, Color
+from kivy.storage.dictstore import DictStore
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
@@ -13,8 +14,9 @@ from schema import *
 
 class Tree(Screen):
     def __init__(self, **kwargs):
-        super(Tree, self).__init__(**kwargs)
-        lines = File('obj-schemas.txt').get()
+        super().__init__(**kwargs)
+        lines = File(DictStore(filename='shared_var').get(key='args')['file_path']).get()
+        # lines = File('obj-schemas.txt').get()
         self.struct = Struct(lines)
         self.tree_map = dict()  # name : button_widget
         self.timeout = 1  # Line UI creation timeout
@@ -53,7 +55,8 @@ class Tree(Screen):
             background_normal='',
             background_color=(1,1,0,1) if center else (0,0,0,0),
             size_hint=(None, 1),
-            width=ImageFont.truetype(font='Montserrat-Medium.ttf', size=20).getlength(text=short_name) + 20, pos_hint={'x': 0, 'y': 0},
+            width=ImageFont.truetype(font='Montserrat-Medium.ttf', size=20).getlength(text=short_name) + 20,
+            pos_hint={'x': 0, 'y': 0},
             on_release=lambda *_: self._create_popup(name=name)
         )
         layout.add_widget(button)
