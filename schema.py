@@ -90,10 +90,9 @@ class Schema:
         return names
 
     def move_types(self):
-        if 'types' in self.descriptions:
-            types = self.descriptions['types']
-            self.types = types
-            del self.descriptions['types']
+        types = self.descriptions['types']
+        self.types = types
+        del self.descriptions['types']
 
 
 class Struct:
