@@ -181,6 +181,25 @@ class Family:
                 max = member.depth
         return max
 
+    def _balance_tree(self, groups):
+        group_map = dict()
+        for group in groups:
+            if group[0].depth not in group_map:
+                group_map[group[0].depth] = [group]
+            else:
+                group_map[group[0].depth].append(group)
+
+
+        new_groups = list()
+        d_groups = list(group_map.values())
+        for d_group in d_groups:
+            for i in range(len(d_group)):
+                if i < int(len(d_group) / 2):
+                    new_groups.append(list(reversed(d_group[i])))
+                else:
+                    new_groups.append(d_group[i])
+        return new_groups
+
     def _find_depth(self):
         for member in self.members:
             member.find_depth()
@@ -188,6 +207,30 @@ class Family:
     def _find_height(self):
         for member in self.members:
             member.find_height()
+
+    def _group_by_depth(self, members):
+        depth = -1
+        groups = list()
+
+        for member in members:
+            if member.depth != depth:
+                depth = member.depth
+                groups.append(list())
+            groups[-1].append(member)
+
+        return groups
+
+    def _group_by_parent(self, members):
+        groups = list()
+        used_members = set()
+        parent_names = [name for member in members for name in member.get_parent_names()]
+        for parent_name in parent_names:
+            groups.append(list())
+            for member in members:
+                if member not in used_members and parent_name in member.get_parent_names():
+                    groups[-1].append(member)
+                    used_members.add(member)
+        return list(filter(None, groups))
 
     def _set_relationships(self):
         for member in self.members:
@@ -202,7 +245,10 @@ class Family:
     def _sort(self):
         sorted_members = self._sort_by_depth(self.members)
         sorted_groups = self._group_by_depth(sorted_members)
-        sorted_members = [member for group in sorted_groups for member in self._sort_by_height(group)]
+        sorted_groups = [self._sort_by_height(group) for group in sorted_groups]
+        sorted_groups = [siblings for group in sorted_groups for siblings in self._group_by_parent(group)]
+        # sorted_groups = self._balance_tree(sorted_groups)
+        sorted_members = [member for siblings in sorted_groups for member in siblings]
         self.members = sorted_members
 
     def _sort_by_depth(self, members):
@@ -232,29 +278,3 @@ class Family:
                 if member not in sorted_members:
                     sorted_members.append(member)
         return sorted_members
-
-    # def _sort_by_parent(self):
-    #     depth_group = self._group_by_depth()
-    #     sorted_groups = list()
-    #     for h_group in depth_group:
-    #         sorted_group = list()
-    #         parent_names = [name for member in h_group for name in member.get_parent_names()]
-    #         for parent_name in parent_names:
-    #             for member in h_group:
-    #                 if member not in sorted_group and parent_name in member.get_parent_names():
-    #                     sorted_group.append(member)
-    #         sorted_groups.extend(sorted_group)
-    #     return sorted_groups
-
-
-    def _group_by_depth(self, members):
-        depth = -1
-        groups = list()
-
-        for member in members:
-            if member.depth != depth:
-                depth = member.depth
-                groups.append(list())
-            groups[-1].append(member)
-
-        return groups
