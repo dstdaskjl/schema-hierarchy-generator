@@ -3,6 +3,7 @@ parser = argparse.ArgumentParser(description='Schema hierarchy generator parser'
 parser.add_argument('-p', type=str, required=True, help='Schema file path')
 args = parser.parse_args()
 sys.argv = [sys.argv[0]]
+sys.tracebacklimit = None
 
 
 from kivy.config import Config
@@ -17,22 +18,20 @@ from kivy.storage.dictstore import DictStore
 DictStore(filename='shared_var').put('args', file_path=args.p)
 
 
-from tree import Tree
+from hierarchy import Hierarchy
 from kivy.uix.screenmanager import ScreenManager, NoTransition
 from kivy.lang.builder import Builder
-Builder.load_file('tree.kv')
+Builder.load_file('hierarchy.kv')
 screen_manager = ScreenManager(transition=NoTransition())
-screen_manager.add_widget(screen=Tree(name='tree'))
+screen_manager.add_widget(screen=Hierarchy(name='hierarchy'))
 
 
 from kivy.app import App
-from kivy.core.window import Window
 from kivy.logger import Logger
 
 
 class Application(App):
     def build(self):
-        # Window.bind(mouse_pos=lambda w, p: print(p))
         return screen_manager
 
 def main():

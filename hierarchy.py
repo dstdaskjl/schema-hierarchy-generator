@@ -1,15 +1,11 @@
 from PIL import ImageFont
 from kivy.clock import Clock
 from kivy.factory import Factory
-from kivy.graphics import Line, Color, Rectangle
+from kivy.graphics import Line, Color
 from kivy.storage.dictstore import DictStore
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
-from kivy.uix.label import Label
-from kivy.uix.popup import Popup
-from kivy.uix.scatter import Scatter
 from kivy.uix.screenmanager import Screen
-from kivy.uix.scrollview import ScrollView
 
 from schema import *
 
@@ -17,7 +13,7 @@ from schema import *
 TIMEOUT = 1
 
 
-def schedule(timeout):
+def schedule(timeout, ):
     def decorate(func):
         def wrap(*args):
             Clock.schedule_once(callback=lambda *_: func(*args), timeout=timeout)
@@ -25,7 +21,7 @@ def schedule(timeout):
     return decorate
 
 
-class Tree(Screen):
+class Hierarchy(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         lines = File(DictStore(filename='shared_var').get(key='args')['file_path']).get()
@@ -43,15 +39,6 @@ class Tree(Screen):
         self._add_buttons_to_tree(schema, family)
         self._center_layouts()
         self._add_lines_to_tree(schema)
-
-    @schedule(timeout=TIMEOUT)
-    def _center_layouts(self):
-        max_width = self.ids.tree_layout.width
-        for layout in self.ids.tree_layout.children:
-            left_padding = (max_width - layout.width) / 2
-            layout.padding = (left_padding, 0, 0, 0)
-
-
 
     def on_release_tree_node(self, name):
         schema = self.struct.get_schema_by_name(name)
@@ -142,6 +129,13 @@ class Tree(Screen):
                     Color(rgba=[0,0,0,1])
                     Line(points=[my_point[0], my_point[1] - 20, child_point[0], child_point[1] + 20], width=1)
                 self._add_line_to_children(schema=child)
+
+    @schedule(timeout=TIMEOUT)
+    def _center_layouts(self):
+        max_width = self.ids.tree_layout.width
+        for layout in self.ids.tree_layout.children:
+            left_padding = (max_width - layout.width) / 2
+            layout.padding = (left_padding, 0, 0, 0)
 
     def _get_center_point_by_name(self, name):
         button = self.tree_map[name]

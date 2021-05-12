@@ -1,4 +1,6 @@
-import copy
+import copy, sys
+
+from exception import *
 
 
 class DFS:
@@ -80,7 +82,15 @@ class Schema:
     def find_height(self):
         self.height = DFS().get_height(node=self, height=0)
 
+    def get_descendant_names(self):
+        names = list()
+        self._find_descendant_names(children=self.children, names=names)
+        return names
+
     def get_parent_names(self):
+        return [parent.name for parent in self.parents]
+
+    def get_parent_names_from_types(self):
         names = list()
         blood_type = self.name[2]
         for type in self.types:
@@ -95,11 +105,17 @@ class Schema:
             self.types = types
             del self.descriptions['types']
 
+    def _find_descendant_names(self, children: list, names: list):
+        for child in children:
+            names.append(child.name)
+            self._find_descendant_names(children=child.children, names=names)
+
 
 class Struct:
     def __init__(self, lines):
         self.lines = lines
         self.schemas = self._get_schemas()
+        self._sanitize()
         self._set_relationships()
 
     def get_family_by_schema(self, schema):
@@ -155,9 +171,49 @@ class Struct:
 
         return schemas
 
+    def _sanitize(self):
+        self._sanitize_duplicate_header()
+        self._sanitize_no_header()
+        self._sanitize_duplicate_id()
+
+    def _sanitize_duplicate_header(self):
+        try:
+            names = set()
+            for schema in self.schemas:
+                if schema.name in names:
+                    raise DuplicateHeaderError(schema.name)
+                else:
+                    names.add(schema.name)
+        except DuplicateHeaderError as e:
+            e.print_errors()
+            sys.exit(1)
+
+    def _sanitize_duplicate_id(self):
+        header = str()
+        ids = set()
+        for line in self.lines:
+            if line[:len('obj-schema')] == 'obj-schema':
+                header = line[line.find('('):]
+                ids = set()
+            elif line[:1] in {'!', '?'}:
+                uid = line[1:line.find(' ')]
+                if uid in ids:
+                    print('DuplicateIdWarning:', header, uid)
+                else:
+                    ids.add(uid)
+
+    def _sanitize_no_header(self):
+        headers = set([schema.name for schema in self.schemas])
+        for schema in self.schemas:
+            blood_type = schema.name[schema.name.find('?'): schema.name.find(' ')]
+            for type in schema.types:
+                if type[type.find('?'): type.find(' ')] == blood_type:
+                    if type not in headers:
+                        print('HeaderNotFoundWarning:', type)
+
     def _set_relationships(self):
         for schema in self.schemas:
-            parent_names = schema.get_parent_names()
+            parent_names = schema.get_parent_names_from_types()
             for parent_name in parent_names:
                 for potential_parent in self.schemas:
                     if potential_parent.name == parent_name:
@@ -181,25 +237,6 @@ class Family:
                 max = member.depth
         return max
 
-    def _balance_tree(self, groups):
-        group_map = dict()
-        for group in groups:
-            if group[0].depth not in group_map:
-                group_map[group[0].depth] = [group]
-            else:
-                group_map[group[0].depth].append(group)
-
-
-        new_groups = list()
-        d_groups = list(group_map.values())
-        for d_group in d_groups:
-            for i in range(len(d_group)):
-                if i < int(len(d_group) / 2):
-                    new_groups.append(list(reversed(d_group[i])))
-                else:
-                    new_groups.append(d_group[i])
-        return new_groups
-
     def _find_depth(self):
         for member in self.members:
             member.find_depth()
@@ -220,21 +257,9 @@ class Family:
 
         return groups
 
-    def _group_by_parent(self, members):
-        groups = list()
-        used_members = set()
-        parent_names = [name for member in members for name in member.get_parent_names()]
-        for parent_name in parent_names:
-            groups.append(list())
-            for member in members:
-                if member not in used_members and parent_name in member.get_parent_names():
-                    groups[-1].append(member)
-                    used_members.add(member)
-        return list(filter(None, groups))
-
     def _set_relationships(self):
         for member in self.members:
-            parent_names = member.get_parent_names()
+            parent_names = member.get_parent_names_from_types()
             for parent_name in parent_names:
                 for potential_parent in self.members:
                     if potential_parent.name == parent_name:
@@ -246,10 +271,19 @@ class Family:
         sorted_members = self._sort_by_depth(self.members)
         sorted_groups = self._group_by_depth(sorted_members)
         sorted_groups = [self._sort_by_height(group) for group in sorted_groups]
-        sorted_groups = [siblings for group in sorted_groups for siblings in self._group_by_parent(group)]
-        # sorted_groups = self._balance_tree(sorted_groups)
-        sorted_members = [member for siblings in sorted_groups for member in siblings]
-        self.members = sorted_members
+        sorted_groups = self._sort_by_ancestor(list(reversed(sorted_groups)))
+        self.members = [member for siblings in sorted_groups for member in siblings]
+
+    def _sort_by_ancestor(self, groups):
+        for i in range(len(groups)):
+            if i and i != len(groups) - 1:
+                members = groups[i]
+                if len(members) >= 2:
+                    sorted_members = self._sort_by_parent(members)
+                    if members != sorted_members:
+                        groups[i][:] = sorted_members
+                        self._update_descendants(parents=sorted_members, child_groups=groups[i+1:])
+        return groups
 
     def _sort_by_depth(self, members):
         sorted_members = list()
@@ -278,3 +312,27 @@ class Family:
                 if member not in sorted_members:
                     sorted_members.append(member)
         return sorted_members
+
+    def _sort_by_parent(self, members):
+        parent_name_member_dict = dict()
+        for member in members:
+            for parent_name in member.get_parent_names():
+                if parent_name in parent_name_member_dict:
+                    parent_name_member_dict[parent_name].append(member)
+                else:
+                    parent_name_member_dict[parent_name] = [member]
+        return [member for children in parent_name_member_dict.values() for member in children]
+
+    def _update_descendants(self, parents, child_groups):
+        descendant_names = [name for member in parents for name in member.get_descendant_names()]
+        descendant_names = list(dict.fromkeys(descendant_names))
+        for child_group in child_groups:
+            child_names = [child.name for child in child_group]
+            ordered_child_group = list()
+            for descendant_name in descendant_names:
+                if descendant_name in child_names:
+                    idx = child_names.index(descendant_name)
+                    ordered_child_group.append(child_group[idx])
+                    del child_group[idx]
+                    del child_names[idx]
+            child_group[:] = ordered_child_group
