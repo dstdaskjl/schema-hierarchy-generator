@@ -1,0 +1,42 @@
+obj-schema (?x header_1.n)
+	:types
+	  	!t0 (?x header_first.n)
+	  	!t1 (?a header_a.n)
+	  	!t2 (?b header_b.n)
+	  	!t3 (?c (header_c.a header_k.n))
+	  	!t4 (?d header_d.n)
+	  	!t5 (?e header_e.n)
+	  	!t6 (?f header_f.n)
+
+	:description_a
+		!a1 (?x desc_a_1.a)
+		!a2 (?f desc_a_2.a)
+		!a3 (?f desc_a_3.a)     ; comments
+	  	!a4 (?e desc_a_4.a)
+	  		; comments
+	
+	:description_b
+		!b1 (?x desc_b_1.b)
+		!b2 (?f desc_b_2.b)
+		!b3 (?f desc_b_3.b)     ; comments
+	  	!b4 (?e desc_b_4.b)
+	  		; comments
+	  		
+obj-schema (?x header_first.n)
+	:description_a
+		!a1 (?x desc_a_1.a)
+		!a2 (?f desc_a_2.a)
+		!a3 (?f desc_a_3.a)     ; comments
+	  	!a4 (?e desc_a_4.a)
+	  		; comments
+
+obj-schema (?x header_last.n)
+	:types
+		!t0 (?x header_1.n)
+		!t1 (?q header_something.n)
+	:description_b
+		!b1 (?x desc_b_1.b)
+		!b2 (?f desc_b_2.b)
+		!b3 (?f desc_b_3.b)     ; comments
+	  	!b4 (?e desc_b_4.b)
+	  		; comments

@@ -114,7 +114,7 @@ class Schema:
 class Struct:
     def __init__(self, lines):
         self.lines = lines
-        self.schemas = self._get_schemas()
+        self._set_schemas()
         self._sanitize()
         self._set_relationships()
 
@@ -144,10 +144,10 @@ class Struct:
                     family.append(parent)
                     self._get_parents_by_schema(schema=parent, family=family)
 
-    def _get_schemas(self):
+    def _set_schemas(self):
         schemas = self._get_schemas_from_lines()
         [schema.move_types() for schema in schemas]
-        return schemas
+        self.schemas = schemas
 
     def _get_schemas_from_lines(self):
         schemas = list()
