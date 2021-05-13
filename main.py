@@ -3,7 +3,6 @@ parser = argparse.ArgumentParser(description='Schema hierarchy generator parser'
 parser.add_argument('-p', type=str, required=True, help='Schema file path')
 args = parser.parse_args()
 sys.argv = [sys.argv[0]]
-sys.tracebacklimit = None
 
 
 from kivy.config import Config
