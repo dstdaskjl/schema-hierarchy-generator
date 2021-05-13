@@ -37,8 +37,7 @@
             hint_text: 'Type Schema Name To Search'
             size_hint: 0.2, 0.05
             pos_hint: {'center_x': 0.5, 'center_y': 0.85}
-            padding_x: 10
-            padding_y: (self.height - self.font_size) / 2.5
+            padding: 10, (self.height - self.font_size) / 2.5
             halign: 'center'
             on_text: root.on_text_search_input(self)
 
