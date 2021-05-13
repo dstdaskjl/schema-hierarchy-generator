@@ -1,6 +1,5 @@
 import copy, sys
-
-from exception import *
+from kivy.logger import Logger
 
 
 class DFS:
@@ -177,16 +176,14 @@ class Struct:
         self._sanitize_duplicate_id()
 
     def _sanitize_duplicate_header(self):
-        try:
-            names = set()
-            for schema in self.schemas:
-                if schema.name in names:
-                    raise DuplicateHeaderError(schema.name)
-                else:
-                    names.add(schema.name)
-        except DuplicateHeaderError as e:
-            e.print_errors()
-            sys.exit(1)
+        names = set()
+        for schema in self.schemas:
+            if schema.name in names:
+                msg = 'DuplicateHeader: ' + schema.name
+                Logger.error(msg)
+                sys.exit(1)
+            else:
+                names.add(schema.name)
 
     def _sanitize_duplicate_id(self):
         header = str()
@@ -198,7 +195,8 @@ class Struct:
             elif line[:1] in {'!', '?'}:
                 uid = line[1:line.find(' ')]
                 if uid in ids:
-                    print('DuplicateIdWarning:', header, uid)
+                    msg = 'DuplicateID: ' + header + ' ' + uid
+                    Logger.warning(msg)
                 else:
                     ids.add(uid)
 
@@ -209,7 +207,8 @@ class Struct:
             for type in schema.types:
                 if type[type.find('?'): type.find(' ')] == blood_type:
                     if type not in headers:
-                        print('HeaderNotFoundWarning:', type)
+                        msg = 'HeaderNotFound: ' + type
+                        Logger.warning(msg)
 
     def _set_relationships(self):
         for schema in self.schemas:
