@@ -26,8 +26,10 @@ class Hierarchy(Screen):
         super().__init__(**kwargs)
         lines = File(DictStore(filename='shared_var').get(key='args')['file_path']).get()
         self.struct = Struct(lines)
-        self.tree_map = dict()  # name : button_widget
-        self.timeout = 1  # Line UI creation timeout
+
+    def on_release_back_button(self, back_button):
+        [event.cancel() for event in Clock.get_events()]
+        self._show_search()
 
     def on_release_search_item_button(self, item_button):
         schema_name = item_button.text
@@ -176,12 +178,16 @@ class Hierarchy(Screen):
             )
             self.ids.search_result.add_widget(button)
 
+    def _show_search(self):
+        self.ids.tree.pos_hint = {'x': 1, 'y': 0}
+        self.ids.search.pos_hint = {'x': 0, 'y': 0}
+        self.ids.tree_layout.clear_widgets()
+
     def _show_tree(self):
         self.ids.search.pos_hint = {'x': 1, 'y': 0}
+        self.ids.tree.pos_hint = {'x': 0.01, 'top': 0.99}
         self.ids.search_input.text = ''
         self.ids.search_result.clear_widgets()
-        self.ids.tree_layout.clear_widgets()
-        self.ids.tree.pos_hint = {'x': 0, 'y': 0}
 
     def _sort_family_by_height(self, family):
         sorted_family = list()

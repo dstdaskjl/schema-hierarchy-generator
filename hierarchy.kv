@@ -53,16 +53,27 @@
                 height: self.minimum_height
                 cols: 1
 
-    ScrollView:
+    BoxLayout:
         id: tree
-        pos_hint: {'x': 1, 'top': 1}
-        do_scroll_x: True
-        do_scroll_y: True
-        GridLayout:
-            id: tree_layout
+        pos_hint: {'x': 1, 'y': 0}
+        orientation: 'vertical'
+
+        Button:
             size_hint: None, None
-            width: self.minimum_width
-            height: self.minimum_height
-            cols: 1
-            spacing: 30
-            padding: 10, 10
+            size: 50, 50
+            background_normal: 'back.png'
+            background_down: 'back.png'
+            border: 0, 0, 0, 0
+            on_release: root.on_release_back_button(self)
+
+        ScrollView:
+            do_scroll_x: True
+            do_scroll_y: True
+            GridLayout:
+                id: tree_layout
+                size_hint: None, None
+                width: self.minimum_width
+                height: self.minimum_height
+                cols: 1
+                spacing: 30
+                padding: 10, 10
