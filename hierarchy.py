@@ -13,7 +13,7 @@ from schema import *
 TIMEOUT = 1
 
 
-def schedule(timeout, ):
+def schedule(timeout):
     def decorate(func):
         def wrap(*args):
             Clock.schedule_once(callback=lambda *_: func(*args), timeout=timeout)
@@ -153,6 +153,7 @@ class Hierarchy(Screen):
     def _search_input_is_valid(self, text_input):
         text = text_input.text.lower()
         if not text:
+            self.ids.search_result.clear_widgets()
             return False
         if text == ' ' or text[-1] == '\t':
             text_input.text = text[:-1]
