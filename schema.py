@@ -31,7 +31,7 @@ class File:
     def __init__(self, filePath):
         self.filePath = filePath
 
-    def get(self):
+    def get_lines(self):
         with open(self.filePath, 'r') as infile:
             lines = infile.readlines()
         lines = list(map(self._remove_comments, lines))
