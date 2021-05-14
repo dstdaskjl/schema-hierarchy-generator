@@ -13,16 +13,12 @@ Config.set('graphics', 'height', '1080')
 Config.set('graphics', 'fullscreen', 'False')
 
 
-from kivy.storage.dictstore import DictStore
-DictStore(filename='shared_var').put('args', file_path=args.p)
-
-
 from hierarchy import Hierarchy
 from kivy.uix.screenmanager import ScreenManager, NoTransition
 from kivy.lang.builder import Builder
 Builder.load_file('hierarchy.kv')
 screen_manager = ScreenManager(transition=NoTransition())
-screen_manager.add_widget(screen=Hierarchy(name='hierarchy'))
+screen_manager.add_widget(screen=Hierarchy(args, name='hierarchy'))
 
 
 from kivy.app import App

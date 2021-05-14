@@ -2,7 +2,6 @@ from PIL import ImageFont
 from kivy.clock import Clock
 from kivy.factory import Factory
 from kivy.graphics import Line, Color
-from kivy.storage.dictstore import DictStore
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.screenmanager import Screen
@@ -10,22 +9,25 @@ from kivy.uix.screenmanager import Screen
 from schema import *
 
 
-TIMEOUT = 1
+FILE_PATH = ''
 
 
-def schedule(timeout):
-    def decorate(func):
-        def wrap(*args):
-            Clock.schedule_once(callback=lambda *_: func(*args), timeout=timeout)
-        return wrap
+def schedule(func):
+    def decorate(*args):
+        Clock.schedule_once(callback=lambda *_: func(*args))
     return decorate
 
 
 class Hierarchy(Screen):
-    def __init__(self, **kwargs):
+    def __init__(self, args, **kwargs):
         super().__init__(**kwargs)
-        lines = File(DictStore(filename='shared_var').get(key='args')['file_path']).get()
+        self._parse_args(args)
+        lines = File(FILE_PATH).get_lines()
         self.struct = Struct(lines)
+
+    def _parse_args(self, args):
+        global FILE_PATH
+        FILE_PATH = args.p
 
     def on_release_back_button(self, back_button):
         [event.cancel() for event in Clock.get_events()]
@@ -107,7 +109,8 @@ class Hierarchy(Screen):
                 center=member.name == schema.name
             )
 
-    @schedule(timeout=TIMEOUT * 2)
+    @schedule
+    @schedule
     def _add_lines_to_tree(self, schema):
         self._add_line_to_parents(schema)
         self._add_line_to_children(schema)
@@ -132,7 +135,7 @@ class Hierarchy(Screen):
                     Line(points=[my_point[0], my_point[1] - 20, child_point[0], child_point[1] + 20], width=1)
                 self._add_line_to_children(schema=child)
 
-    @schedule(timeout=TIMEOUT)
+    @schedule
     def _center_layouts(self):
         max_width = self.ids.tree_layout.width
         for layout in self.ids.tree_layout.children:
