@@ -25,7 +25,7 @@ class Hierarchy(Screen):
         self._parse_args(args)
         lines = File(FILE_PATH).get_lines()
         self.struct = Struct(lines)
-        
+
         self.name_button_map = dict()
         self.line_colors = list()
         self.colored_node_name = str()
