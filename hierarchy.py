@@ -1,5 +1,6 @@
 from PIL import ImageFont
 from kivy.clock import Clock
+from kivy.core.window import Window
 from kivy.factory import Factory
 from kivy.graphics import Line, Color
 from kivy.uix.button import Button
@@ -24,6 +25,10 @@ class Hierarchy(Screen):
         self._parse_args(args)
         lines = File(FILE_PATH).get_lines()
         self.struct = Struct(lines)
+        
+        self.name_button_map = dict()
+        self.line_colors = list()
+        self.colored_node_name = str()
 
     def _parse_args(self, args):
         global FILE_PATH
@@ -98,10 +103,10 @@ class Hierarchy(Screen):
         )
         layout.add_widget(button)
         layout.width = sum([widget.width for widget in layout.children]) + (layout.spacing[0] * (len(layout.children) - 1))
-        self.tree_map[name] = button
+        self.name_button_map[name] = button
 
     def _add_buttons_to_tree(self, schema, family):
-        self.tree_map = dict()
+        self.name_button_map = dict()
         for member in family.members:
             self._add_button_to_tree(
                 level=family.get_max_depth() - member.depth,
@@ -112,17 +117,20 @@ class Hierarchy(Screen):
     @schedule
     @schedule
     def _add_lines_to_tree(self, schema):
+        self.line_colors = list()
         self._add_line_to_parents(schema)
         self._add_line_to_children(schema)
+        Window.bind(mouse_pos=self._color_lines)
 
     def _add_line_to_parents(self, schema):
         if schema.parents:
             my_point = self._get_center_point_by_name(schema.name)
             for parent in schema.parents:
                 parent_point = self._get_center_point_by_name(parent.name)
-                with self.tree_map[schema.name].canvas:
-                    Color(rgba=[0,0,0,1])
+                with self.name_button_map[schema.name].canvas:
+                    color = Color(rgba=[0,0,0,1])
                     Line(points=[my_point[0], my_point[1] + 20, parent_point[0], parent_point[1] - 20], width=1)
+                    self.line_colors.append(LineColor(schema.name, parent.name, color))
                 self._add_line_to_parents(schema=parent)
 
     def _add_line_to_children(self, schema):
@@ -130,10 +138,18 @@ class Hierarchy(Screen):
             my_point = self._get_center_point_by_name(schema.name)
             for child in schema.children:
                 child_point = self._get_center_point_by_name(child.name)
-                with self.tree_map[schema.name].canvas:
-                    Color(rgba=[0,0,0,1])
+                with self.name_button_map[schema.name].canvas:
+                    color = Color(rgba=[0,0,0,1])
                     Line(points=[my_point[0], my_point[1] - 20, child_point[0], child_point[1] + 20], width=1)
+                    self.line_colors.append(LineColor(schema.name, child.name, color))
                 self._add_line_to_children(schema=child)
+
+    def _button_collides(self, button, pos):
+        x1, y1 = button.to_window(*button.pos)
+        x2, y2 = x1 + button.width, y1 + button.height
+        if pos[0] >= x1 and pos[0] <= x2 and pos[1] >= y1 and pos[1] <= y2:
+            return True
+        return False
 
     @schedule
     def _center_layouts(self):
@@ -142,8 +158,24 @@ class Hierarchy(Screen):
             left_padding = (max_width - layout.width) / 2
             layout.padding = (left_padding, 0, 0, 0)
 
+    def _color_lines(self, window, pos):
+        for name, button in self.name_button_map.items():
+            if self._button_collides(button, pos):
+                if name != self.colored_node_name:
+                    self._reset_line_colors()
+                    schema = self.struct.get_schema_by_name(name=name)
+                    family_names = set(schema.get_family_names())
+                    for line_color in self.line_colors:
+                        if line_color.node_name_1 in family_names and line_color.node_name_2 in family_names:
+                            line_color.color.rgba = [1, 0, 0, 1]
+                    self.colored_node_name = name
+                return
+        if self.colored_node_name != str():
+            self.colored_node_name = str()
+            self._reset_line_colors()
+
     def _get_center_point_by_name(self, name):
-        button = self.tree_map[name]
+        button = self.name_button_map[name]
         x = button.x + button.width / 2
         y = button.y + button.height / 2
         return x, y
@@ -154,6 +186,10 @@ class Hierarchy(Screen):
             if keyword in schema.name:
                 search_result.append(schema.name)
         return search_result
+
+    def _reset_line_colors(self):
+        for line_color in self.line_colors:
+            line_color.color.rgba = [0, 0, 0, 1]
 
     def _search_input_is_valid(self, text_input):
         text = text_input.text.lower()
@@ -205,3 +241,10 @@ class Hierarchy(Screen):
                 if member not in sorted_family:
                     sorted_family.append(member)
         return sorted_family
+
+
+class LineColor:
+    def __init__(self, name1, name2, color):
+        self.node_name_1 = name1
+        self.node_name_2 = name2
+        self.color = color

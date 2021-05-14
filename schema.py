@@ -81,9 +81,22 @@ class Schema:
     def find_height(self):
         self.height = DFS().get_height(node=self, height=0)
 
+    def get_ancestor_names(self):
+        names = list()
+        self._find_ancestor_names(parents=self.parents, names=names)
+        return names
+
     def get_descendant_names(self):
         names = list()
         self._find_descendant_names(children=self.children, names=names)
+        return names
+
+    def get_family_names(self):
+        names = [self.name]
+        if self.parents:
+            names.extend(self.get_ancestor_names())
+        if self.children:
+            names.extend(self.get_descendant_names())
         return names
 
     def get_parent_names(self):
@@ -103,6 +116,11 @@ class Schema:
             types = self.descriptions['types']
             self.types = types
             del self.descriptions['types']
+
+    def _find_ancestor_names(self, parents: list, names: list):
+        for parent in parents:
+            names.append(parent.name)
+            self._find_ancestor_names(parents=parent.parents, names=names)
 
     def _find_descendant_names(self, children: list, names: list):
         for child in children:
