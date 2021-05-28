@@ -1,6 +1,8 @@
 import argparse, sys
 parser = argparse.ArgumentParser(description='Schema hierarchy generator parser')
 parser.add_argument('-p', type=str, required=True, help='Schema file path')
+parser.add_argument('-f', type=int, required=False, help='Font size. 20 by default')
+parser.add_argument('-s', type=int, required=False, help='Spacing between levels. 100 by default')
 args = parser.parse_args()
 sys.argv = [sys.argv[0]]
 

@@ -11,6 +11,7 @@ from schema import *
 
 
 FILE_PATH = ''
+FONT_SIZE = 20
 
 
 def schedule(func):
@@ -31,8 +32,10 @@ class Hierarchy(Screen):
         self.colored_node_name = str()
 
     def _parse_args(self, args):
-        global FILE_PATH
+        global FILE_PATH, FONT_SIZE
         FILE_PATH = args.p
+        FONT_SIZE = args.f if args.f else 20
+        self.ids.tree_layout.spacing = args.s if args.s else 100
 
     def on_release_back_button(self, back_button):
         [event.cancel() for event in Clock.get_events()]
@@ -92,12 +95,12 @@ class Hierarchy(Screen):
         button = Button(
             text=short_name,
             font_name='Montserrat-Medium.ttf',
-            font_size=20,
+            font_size=FONT_SIZE,
             color=(0,0,0,1),
             background_normal='',
             background_color=(1,1,0,1) if center else (0,0,0,0),
             size_hint=(None, 1),
-            width=ImageFont.truetype(font='Montserrat-Medium.ttf', size=20).getlength(text=short_name) + 20,
+            width=ImageFont.truetype(font='Montserrat-Medium.ttf', size=FONT_SIZE).getlength(text=short_name) + FONT_SIZE,
             pos_hint={'x': 0, 'y': 0},
             on_release=lambda *_: self.on_release_tree_node(name=name)
         )
@@ -129,7 +132,7 @@ class Hierarchy(Screen):
                 parent_point = self._get_center_point_by_name(parent.name)
                 with self.name_button_map[schema.name].canvas:
                     color = Color(rgba=[0,0,0,1])
-                    Line(points=[my_point[0], my_point[1] + 20, parent_point[0], parent_point[1] - 20], width=1)
+                    Line(points=[my_point[0], my_point[1] + FONT_SIZE, parent_point[0], parent_point[1] - FONT_SIZE], width=1)
                     self.line_colors.append(LineColor(schema.name, parent.name, color))
                 self._add_line_to_parents(schema=parent)
 
@@ -140,7 +143,7 @@ class Hierarchy(Screen):
                 child_point = self._get_center_point_by_name(child.name)
                 with self.name_button_map[schema.name].canvas:
                     color = Color(rgba=[0,0,0,1])
-                    Line(points=[my_point[0], my_point[1] - 20, child_point[0], child_point[1] + 20], width=1)
+                    Line(points=[my_point[0], my_point[1] - FONT_SIZE, child_point[0], child_point[1] + FONT_SIZE], width=1)
                     self.line_colors.append(LineColor(schema.name, child.name, color))
                 self._add_line_to_children(schema=child)
 
@@ -207,7 +210,7 @@ class Hierarchy(Screen):
             button = Button(
                 text=item,
                 color=(0, 0, 0, 1),
-                font_size=20,
+                font_size=FONT_SIZE,
                 background_normal='',
                 background_color=(0, 0, 0, 0),
                 size_hint=(1, None),
