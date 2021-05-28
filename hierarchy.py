@@ -30,16 +30,21 @@ class Hierarchy(Screen):
         self.name_button_map = dict()
         self.line_colors = list()
         self.colored_node_name = str()
-
-    def _parse_args(self, args):
-        global FILE_PATH, FONT_SIZE
-        FILE_PATH = args.p
-        FONT_SIZE = args.f if args.f else 20
-        self.ids.tree_layout.spacing = args.s if args.s else 100
+        self.is_visible = True
 
     def on_release_back_button(self, back_button):
         [event.cancel() for event in Clock.get_events()]
         self._show_search()
+
+    def on_release_show_button(self, show_button):
+        if not self.is_visible:
+            self.is_visible = True
+            self._reset_line_colors()
+
+    def on_release_hide_button(self, hide_button):
+        if self.is_visible:
+            self.is_visible = False
+            self._reset_line_colors()
 
     def on_release_search_item_button(self, item_button):
         schema_name = item_button.text
@@ -190,9 +195,15 @@ class Hierarchy(Screen):
                 search_result.append(schema.name)
         return search_result
 
+    def _parse_args(self, args):
+        global FILE_PATH, FONT_SIZE
+        FILE_PATH = args.p
+        FONT_SIZE = args.f if args.f else 20
+        self.ids.tree_layout.spacing = args.s if args.s else 100
+
     def _reset_line_colors(self):
         for line_color in self.line_colors:
-            line_color.color.rgba = [0, 0, 0, 1]
+            line_color.color.rgba = [0, 0, 0, 1] if self.is_visible else [0, 0, 0, 0]
 
     def _search_input_is_valid(self, text_input):
         text = text_input.text.lower()

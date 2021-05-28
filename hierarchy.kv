@@ -57,13 +57,41 @@
         pos_hint: {'x': 1, 'y': 0}
         orientation: 'vertical'
 
-        Button:
-            size_hint: None, None
-            size: 50, 50
-            background_normal: 'back.png'
-            background_down: 'back.png'
-            border: 0, 0, 0, 0
-            on_release: root.on_release_back_button(self)
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint: 1, None
+            height: 50
+            spacing: 20
+
+            Button:
+                size_hint: None, None
+                size: 50, 50
+                background_normal: 'back.png'
+                background_down: 'back.png'
+                border: 0, 0, 0, 0
+                on_release: root.on_release_back_button(self)
+
+            Button:
+                text: 'SHOW'
+                color: 0, 0, 0, 1
+                font_size: 30
+                size_hint: None, None
+                size: 100, 50
+                background_normal: ''
+                background_down: ''
+                border: 0, 0, 0, 0
+                on_release: root.on_release_show_button(self)
+
+            Button:
+                text: 'HIDE'
+                color: 0, 0, 0, 1
+                font_size: 30
+                size_hint: None, None
+                size: 100, 50
+                background_normal: ''
+                background_down: ''
+                border: 0, 0, 0, 0
+                on_release: root.on_release_hide_button(self)
 
         ScrollView:
             do_scroll_x: True
