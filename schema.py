@@ -148,18 +148,16 @@ class Struct:
                 return schema
 
     def _get_children_by_schema(self, schema, family):
-        if schema.children:
-            for child in schema.children:
-                if child not in family:
-                    family.append(child)
-                    self._get_children_by_schema(schema=child, family=family)
+        for child in schema.children:
+            if child not in family:
+                family.append(child)
+                self._get_children_by_schema(schema=child, family=family)
 
     def _get_parents_by_schema(self, schema, family):
-        if schema.parents:
-            for parent in schema.parents:
-                if parent not in family:
-                    family.append(parent)
-                    self._get_parents_by_schema(schema=parent, family=family)
+        for parent in schema.parents:
+            if parent not in family:
+                family.append(parent)
+                self._get_parents_by_schema(schema=parent, family=family)
 
     def _set_schemas(self):
         schemas = self._get_schemas_from_lines()
@@ -289,7 +287,12 @@ class Family:
         sorted_groups = self._group_by_depth(sorted_members)
         sorted_groups = [self._sort_by_height(group) for group in sorted_groups]
         sorted_groups = self._sort_by_ancestor(list(reversed(sorted_groups)))
-        self.members = [member for siblings in sorted_groups for member in siblings]
+
+        self.members = list()
+        for siblings in sorted_groups:
+            for member in siblings:
+                if member not in self.members:
+                    self.members.append(member)
 
     def _sort_by_ancestor(self, groups):
         for i in range(len(groups)):
